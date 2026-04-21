@@ -1,0 +1,227 @@
+﻿@page "/inventario"
+
+<h3 class="mt-3">📦 Registro de productos</h3>
+
+<!-- Formulario de captura -->
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">No. de inventario</label>
+                <input type="number" class="form-control" @bind="_nuevoInventario" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Descripción</label>
+                <input type="text" class="form-control" placeholder="Escribe la descripción del producto" @bind="_nuevaDescripcion" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Departamento</label>
+                <div class="mt-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="departamento" value="Frutas" @bind="_departamento" />
+                        <label class="form-check-label">Frutas</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="departamento" value="Verduras" @bind="_departamento" />
+                        <label class="form-check-label">Verduras</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="departamento" value="Lacteos" @bind="_departamento" />
+                        <label class="form-check-label">Lácteos</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <button class="btn btn-primary" @onclick="GuardarDatos">💾 Guardar datos</button>
+                @if (!string.IsNullOrEmpty(_mensajeError))
+                {
+                    <span class="text-danger ms-3">@_mensajeError</span>
+                }
+                @if (!string.IsNullOrEmpty(_mensajeExito))
+                {
+                    <span class="text-success ms-3">@_mensajeExito</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botones de listado -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <button class="btn btn-secondary me-2" @onclick="ListaCompleta">📋 Lista completa</button>
+        <button class="btn btn-success me-2" @onclick="ListaFrutas">🍎 Lista de frutas</button>
+        <button class="btn btn-success me-2" @onclick="ListaVerduras">🥕 Lista de verduras</button>
+        <button class="btn btn-success me-2" @onclick="ListaLacteos">🥛 Lista de lácteos</button>
+        @if (_mostrarLista)
+        {
+            <button class="btn btn-danger" @onclick="CerrarLista">❌ Cerrar lista</button>
+        }
+    </div>
+</div>
+
+<!-- Tabla de productos (solo si _mostrarLista es true) -->
+@if (_mostrarLista)
+{
+    <div class="row mt-4">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white fw-bold">
+                    📄 Listado de productos
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>No. Inventario</th>
+                                <th>Descripción</th>
+                                <th>Departamento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var prod in _productosFiltrados)
+                            {
+                                <tr>
+                                    <td>@prod.Inventario</td>
+                                    <td>@prod.Descripcion</td>
+                                    <td>@prod.Departamento</td>
+                                </tr>
+                            }
+                            @if (!_productosFiltrados.Any())
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No hay productos para mostrar</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Modelo de producto
+    private class Producto
+    {
+        public int Inventario { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+        public string Departamento { get; set; } = string.Empty;
+    }
+
+    // Colección en memoria
+    private List<Producto> _productos = new List<Producto>();
+
+    // Variables del formulario
+    private int _nuevoInventario;
+    private string _nuevaDescripcion = string.Empty;
+    private string _departamento = "Frutas"; // valor por defecto
+
+    // Variables para la lista
+    private bool _mostrarLista = false;
+    private enum FiltroLista { Completa, Frutas, Verduras, Lacteos }
+    private FiltroLista _filtroActual = FiltroLista.Completa;
+
+    // Mensajes
+    private string _mensajeError = string.Empty;
+    private string _mensajeExito = string.Empty;
+
+    // Propiedad que devuelve los productos según el filtro seleccionado
+    private List<Producto> _productosFiltrados
+    {
+        get
+        {
+            if (!_mostrarLista) return new List<Producto>();
+
+            return _filtroActual switch
+            {
+                FiltroLista.Frutas => _productos.Where(p => p.Departamento == "Frutas").ToList(),
+                FiltroLista.Verduras => _productos.Where(p => p.Departamento == "Verduras").ToList(),
+                FiltroLista.Lacteos => _productos.Where(p => p.Departamento == "Lacteos").ToList(),
+                _ => _productos.ToList() // Completa
+            };
+        }
+    }
+
+    // Guardar datos con validación de número único
+    private void GuardarDatos()
+    {
+        _mensajeError = string.Empty;
+        _mensajeExito = string.Empty;
+
+        // Validar descripción no vacía
+        if (string.IsNullOrWhiteSpace(_nuevaDescripcion))
+        {
+            _mensajeError = "La descripción no puede estar vacía.";
+            return;
+        }
+
+        // Validar que el número de inventario sea positivo (opcional pero lógico)
+        if (_nuevoInventario <= 0)
+        {
+            _mensajeError = "El número de inventario debe ser mayor que cero.";
+            return;
+        }
+
+        // Validar unicidad del número de inventario
+        if (_productos.Any(p => p.Inventario == _nuevoInventario))
+        {
+            _mensajeError = $"El número de inventario {_nuevoInventario} ya existe. No se puede duplicar.";
+            return;
+        }
+
+        // Agregar producto
+        _productos.Add(new Producto
+        {
+            Inventario = _nuevoInventario,
+            Descripcion = _nuevaDescripcion.Trim(),
+            Departamento = _departamento
+        });
+
+        // Limpiar campos
+        _nuevoInventario = 0;
+        _nuevaDescripcion = string.Empty;
+        _departamento = "Frutas";
+
+        _mensajeExito = "Producto guardado correctamente.";
+
+        // Si la lista está visible, se actualiza automáticamente (por la propiedad _productosFiltrados)
+    }
+
+    // Mostrar lista completa
+    private void ListaCompleta()
+    {
+        _filtroActual = FiltroLista.Completa;
+        _mostrarLista = true;
+    }
+
+    // Mostrar solo frutas
+    private void ListaFrutas()
+    {
+        _filtroActual = FiltroLista.Frutas;
+        _mostrarLista = true;
+    }
+
+    // Mostrar solo verduras
+    private void ListaVerduras()
+    {
+        _filtroActual = FiltroLista.Verduras;
+        _mostrarLista = true;
+    }
+
+    // Mostrar solo lácteos
+    private void ListaLacteos()
+    {
+        _filtroActual = FiltroLista.Lacteos;
+        _mostrarLista = true;
+    }
+
+    // Cerrar lista (ocultar la tabla)
+    private void CerrarLista()
+    {
+        _mostrarLista = false;
+    }
+}
