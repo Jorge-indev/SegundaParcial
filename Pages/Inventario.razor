@@ -25,6 +25,7 @@
         </div>
         <div class="row mt-3">
             <div class="col-md-12">
+                
                 @if (_mensajeError != "")
                 {
                     <span class="text-danger">@_mensajeError</span>
@@ -66,44 +67,39 @@
                 </thead>
                 <tbody>
                     @{
-                        List<Producto> productosAMostrar = new List<Producto>();
-                        if (_filtro == "completa")
+                        // Listas temporales para los índices que cumplen el filtro
+                        List<int> indicesMostrar = new List<int>();
+                        for (int i = 0; i < _inventarios.Count; i++)
                         {
-                            productosAMostrar = _productos;
-                        }
-                        if (_filtro == "frutas")
-                        {
-                            foreach (var p in _productos)
+                            bool cumple = false;
+                            if (_filtro == "completa")
                             {
-                                if (p.Departamento == "Frutas")
-                                {
-                                    productosAMostrar.Add(p);
-                                }
+                                cumple = true;
                             }
-                        }
-                        if (_filtro == "verduras")
-                        {
-                            foreach (var p in _productos)
+                            else if (_filtro == "frutas")
                             {
-                                if (p.Departamento == "Verduras")
-                                {
-                                    productosAMostrar.Add(p);
-                                }
+                                if (_departamentos[i] == "Frutas")
+                                    cumple = true;
                             }
-                        }
-                        if (_filtro == "lacteos")
-                        {
-                            foreach (var p in _productos)
+                            else if (_filtro == "verduras")
                             {
-                                if (p.Departamento == "Lacteos")
-                                {
-                                    productosAMostrar.Add(p);
-                                }
+                                if (_departamentos[i] == "Verduras")
+                                    cumple = true;
+                            }
+                            else if (_filtro == "lacteos")
+                            {
+                                if (_departamentos[i] == "Lacteos")
+                                    cumple = true;
+                            }
+
+                            if (cumple)
+                            {
+                                indicesMostrar.Add(i);
                             }
                         }
                     }
 
-                    @if (productosAMostrar.Count == 0)
+                    @if (indicesMostrar.Count == 0)
                     {
                         <tr>
                             <td colspan="3">No hay productos para mostrar</td>
@@ -111,12 +107,12 @@
                     }
                     else
                     {
-                        foreach (var prod in productosAMostrar)
+                        foreach (int idx in indicesMostrar)
                         {
                             <tr>
-                                <td>@prod.Inventario</td>
-                                <td>@prod.Descripcion</td>
-                                <td>@prod.Departamento</td>
+                                <td>@_inventarios[idx]</td>
+                                <td>@_descripciones[idx]</td>
+                                <td>@_departamentos[idx]</td>
                             </tr>
                         }
                     }
@@ -127,14 +123,9 @@
 }
 
 @code {
-    private class Producto
-    {
-        public int Inventario { get; set; }
-        public string Descripcion { get; set; } = "";
-        public string Departamento { get; set; } = "";
-    }
-
-    private List<Producto> _productos = new List<Producto>();
+    private List<int> _inventarios = new List<int>();
+    private List<string> _descripciones = new List<string>();
+    private List<string> _departamentos = new List<string>();
 
     private int _numeroInventario;
     private string _descripcion = "";
@@ -164,9 +155,9 @@
         }
 
         bool repetido = false;
-        foreach (var p in _productos)
+        foreach (int inv in _inventarios)
         {
-            if (p.Inventario == _numeroInventario)
+            if (inv == _numeroInventario)
             {
                 repetido = true;
                 break;
@@ -178,17 +169,16 @@
             return;
         }
 
-        Producto nuevo = new Producto();
-        nuevo.Inventario = _numeroInventario;
-        nuevo.Descripcion = _descripcion;
-        nuevo.Departamento = _departamento;
-
+        
         int indice = 0;
-        while (indice < _productos.Count && _productos[indice].Inventario < nuevo.Inventario)
+        while (indice < _inventarios.Count && _inventarios[indice] < _numeroInventario)
         {
             indice++;
         }
-        _productos.Insert(indice, nuevo);
+
+        _inventarios.Insert(indice, _numeroInventario);
+        _descripciones.Insert(indice, _descripcion);
+        _departamentos.Insert(indice, _departamento);
 
         _numeroInventario = 0;
         _descripcion = "";
